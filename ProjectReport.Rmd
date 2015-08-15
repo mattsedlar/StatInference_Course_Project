@@ -34,7 +34,9 @@ I'm going to start off by running 1,000 simulations on the exponentials using R'
 
 ```{r}
 
-sims <- replicate(nosims, mean(rexp(nexps,rate)))
+sims <- data.frame(
+  exponentials=c(apply(matrix(rexp(nexps * nosims/10,rate),nrow=nexps),2,mean)),
+  size = c("1000"))
 
 ```
 
