@@ -70,7 +70,7 @@ And plot it on the distribution, looking at the density.
 ggplot(simsdf, aes(averages)) + 
   geom_density(aes(fill=size),alpha=.5) +
   geom_vline(xintercept= samplemean) +
-  ggtitle("Sample Mean on Distribution of Averages")
+  ggtitle("Sample Mean of Distribution of Averages")
 ```
 
 ![](ProjectReport_files/figure-html/unnamed-chunk-4-1.png) 
@@ -79,7 +79,7 @@ We know given the rate (0.2) that our expected value is 5 based on the following
 
 $$E[X]=\frac{1}{\lambda}=\beta$$
 
-We also know that from the Central Limit Theorem that the sample mean approximates the population mean. To illustrate this, I'm going to pull samples from my simulation and plot those against the simulation distribution. 
+We also know from the Central Limit Theorem that the sample mean approximates the population mean. To illustrate this, I'm going to pull samples from my simulation and plot those against the simulation distribution. 
 
 
 ```r
@@ -97,7 +97,7 @@ simsdf <- rbind(simsdf,sampledf)
 ggplot(simsdf, aes(averages)) + 
   geom_density(aes(fill=size),alpha=.5) +
   geom_vline(xintercept= c(samplemean, mean(asample), mean(anothersample))) +
-  ggtitle("Expected Value of Various Sizes of Distributions")
+  ggtitle("Expected Values of Various Sizes of Distributions")
 ```
 
 ![](ProjectReport_files/figure-html/unnamed-chunk-5-1.png) 
@@ -125,7 +125,7 @@ samplevariance
 ## [1] 24.72587
 ```
 
-As with the mean, we see the same behavior with the various. I will use dplyr's group_by function on my simulations data frame to create a dataframe that only displays the means and variances for each size of distributions.
+As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of distributions.
 
 
 ```r

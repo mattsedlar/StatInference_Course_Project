@@ -1,9 +1,10 @@
 ---
-title: "Statistical Inference Course Project: Exploring the Central Limit Theorem"
+title: 'Statistical Inference Course Project: Exploring the Central Limit Theorem'
 author: "By Matthew Sedlar"
-output: 
+output:
+  pdf_document: default
   html_document:
-    keep_md: true
+    keep_md: yes
 ---
 
 
@@ -100,7 +101,7 @@ simsdf <- rbind(simsdf,sampledf)
 ggplot(simsdf, aes(averages)) + 
   geom_density(aes(fill=size),alpha=.5) +
   geom_vline(xintercept= c(samplemean, mean(asample), mean(anothersample))) +
-  ggtitle("Expected Value of Various Sizes of Distributions")
+  ggtitle("Expected Values of Various Sizes of Distributions")
 
 ```
 
@@ -124,7 +125,7 @@ samplevariance
 
 ```
 
-As with the mean, we see the same behavior with the various. I will use dplyr's group_by function on my simulations data frame to create a dataframe that only displays the means and variances for each size of distributions.
+As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of distributions.
 
 ```{r message=FALSE}
 
