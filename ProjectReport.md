@@ -38,16 +38,7 @@ simsdf <- data.frame(averages = apply(sims,2, mean),
 
 Let's plot the averages using ggplot's histogram function to get a sense of our distribution.
 
-
-```r
-library(ggplot2)
-
-ggplot(simsdf, aes(averages)) + 
-  geom_histogram() +
-  ggtitle("Distribution of Averages from Simulations of Random Exponentials")
-```
-
-![](ProjectReport_files/figure-html/distribution-1.png) 
+<img src="ProjectReport_files/figure-html/distribution-1.png" title="" alt="" style="display: block; margin: auto;" />
 
 ## Sample Mean versus Theoretical Mean.
 
@@ -65,15 +56,7 @@ samplemean
 
 And plot it on the distribution, looking at the density.
 
-
-```r
-ggplot(simsdf, aes(averages)) + 
-  geom_density(aes(fill=size),alpha=.5) +
-  geom_vline(xintercept= samplemean) +
-  ggtitle("Sample Mean of Distribution of Averages")
-```
-
-![](ProjectReport_files/figure-html/unnamed-chunk-4-1.png) 
+<img src="ProjectReport_files/figure-html/unnamed-chunk-4-1.png" title="" alt="" style="display: block; margin: auto;" />
 
 We know given the rate (0.2) that our expected value is 5 based on the following formula.
 
@@ -84,23 +67,17 @@ We also know from the Central Limit Theorem that the sample mean from unbiased d
 
 ```r
 set.seed(13)
-# simulate 500 and 250 averages from random exponentials
-asample <- replicate(500,mean(rexp(nexps,rate)))
+# simulate 100 and 10 averages from random exponentials
+asample <- replicate(nosims/10,mean(rexp(nexps,rate)))
 set.seed(13)
-anothersample <- replicate(250,mean(rexp(nexps,rate)))
+anothersample <- replicate(nosims/100,mean(rexp(nexps,rate)))
 
 # creating a new data frame and then binding those rows to the original
-sampledf <- data.frame(averages=c(asample,anothersample), size=c("500","250"))
+sampledf <- data.frame(averages=c(asample,anothersample), size=c("100","10"))
 simsdf <- rbind(simsdf,sampledf)
-
-# plotting all the distributions with their means
-ggplot(simsdf, aes(averages)) + 
-  geom_density(aes(fill=size),alpha=.5) +
-  geom_vline(xintercept= c(samplemean, mean(asample), mean(anothersample))) +
-  ggtitle("Expected Values of Various Sizes of Distributions")
 ```
 
-![](ProjectReport_files/figure-html/unnamed-chunk-5-1.png) 
+<img src="ProjectReport_files/figure-html/unnamed-chunk-6-1.png" title="" alt="" style="display: block; margin: auto;" />
 
 No matter the sample size, the sample mean clusters around the theoretical mean. 
 
@@ -108,24 +85,22 @@ No matter the sample size, the sample mean clusters around the theoretical mean.
 
 Next, let's look at our sample variance.
 
-We know that our theoretical variance is 25 based on the following formula for an exponential distribution:
+We know that our theoretical variance is 25 because the mean and standard deviation for our exponential distribution is:
+
+$$\frac{1}{\lambda}$$
+
+That makes our variance:
 
 $$Var[X]=\frac{1}{\lambda^2}$$
 
-Because our data is noisy -- it doesn't come from a pure Poisson process -- we should estimate our sample variance using the following formula:
-
-$$s_{N-1} = \sqrt {\frac{1}{{N-1}}\sum\limits_{i=1}^N {\left( {x_i - \bar x} \right)^2}}$$
-
-Thankfully the var function in R does that for us.
-
 
 ```r
-samplevariance <- var(simsdf$averages[simsdf$size=="1000"])
+samplevariance <- samplemean^2
 samplevariance
 ```
 
 ```
-## [1] 0.6231669
+## [1] 24.72587
 ```
 
 As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of distributions.
@@ -135,7 +110,8 @@ As with the mean, we see the same behavior with the variance. I will use dplyr's
 library(dplyr)
 averagesdf <- simsdf %>% 
   group_by(size) %>% 
-  summarize(mean = mean(averages), var = var(averages))
+  summarize(mean = mean(averages)) %>% 
+  mutate(var = mean^2)
 
 averagesdf
 ```
@@ -143,16 +119,16 @@ averagesdf
 ```
 ## Source: local data frame [3 x 3]
 ## 
-##   size     mean       var
-## 1 1000 4.972512 0.6231669
-## 2  250 4.944257 0.5594809
-## 3  500 5.011172 0.6119713
+##   size     mean      var
+## 1 1000 4.972512 24.72587
+## 2   10 4.784766 22.89398
+## 3  100 5.071031 25.71535
 ```
 
 
 ## Distribution
 
-There are three ways to tell if our distribution is approximately normal. 
+There are three ways to tell if our distribution is normal. 
 
 * mean = median = mode
 * The distribution is symmetric
@@ -162,13 +138,13 @@ That's three ways of saying the same thing, really. But they are easy to test, i
 
 ### mean = median = mode.
 
-In R, this is a simple logical comparison.
+In R, this is a simple logical comparison. Since we're trying to prove if it is "approximately" normal, let's use the signif function on our values to the first decimal point.
 
 
 ```r
-samplemean == median(simsdf$averages[simsdf$size=="1000"])
+signif(samplemean,1) == signif(median(simsdf$averages[simsdf$size=="1000"]),1)
 ```
 
 ```
-## [1] FALSE
+## [1] TRUE
 ```

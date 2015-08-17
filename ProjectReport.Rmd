@@ -44,20 +44,7 @@ simsdf <- data.frame(averages = apply(sims,2, mean),
 
 ```
 
-Let's plot the averages using ggplot's histogram function to get a sense of our distribution.
-
-```{r distribution, message=FALSE}
-
-library(ggplot2)
-
-ggplot(simsdf, aes(averages)) + 
-  geom_histogram() +
-  ggtitle("Distribution of Averages from Simulations of Random Exponentials")
-
-
-```
-
-## Sample Mean versus Theoretical Mean.
+## Sample Mean versus Theoretical Mean
 
 Let's examine the mean of our sample distribution:
 
@@ -70,12 +57,15 @@ samplemean
 
 And plot it on the distribution, looking at the density.
 
-```{r}
 
+```{r, echo=FALSE, fig.height=3}
+
+library(ggplot2)
 ggplot(simsdf, aes(averages)) + 
   geom_density(aes(fill=size),alpha=.5) +
   geom_vline(xintercept= samplemean) +
-  ggtitle("Sample Mean of Distribution of Averages")
+  ggtitle("Sample Mean of Distribution of Averages") +
+  xlab("Distribution of Averages")
 
 ```
 
@@ -83,59 +73,59 @@ We know given the rate (0.2) that our expected value is 5 based on the following
 
 $$E[X]=\frac{1}{\lambda}=\beta$$
 
-We also know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To illustrate this, I'm going to pull samples from my simulation and plot those against the simulation distribution. 
+We also know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To illustrate this, I'm going to run two more simulations -- 100 and 10 times, respectively -- and then plot those distributions against the original simulation distribution. 
 
-```{r}
+
+```{r echo=FALSE, fig.height=3}
 
 set.seed(13)
-# simulate 500 and 250 averages from random exponentials
-asample <- replicate(500,mean(rexp(nexps,rate)))
+# simulate 100 and 10 averages from random exponentials
+asample <- replicate(nosims/10,mean(rexp(nexps,rate)))
 set.seed(13)
-anothersample <- replicate(250,mean(rexp(nexps,rate)))
+anothersample <- replicate(nosims/100,mean(rexp(nexps,rate)))
 
 # creating a new data frame and then binding those rows to the original
-sampledf <- data.frame(averages=c(asample,anothersample), size=c("500","250"))
+sampledf <- data.frame(averages=c(asample,anothersample), size=c("100","10"))
 simsdf <- rbind(simsdf,sampledf)
 
 # plotting all the distributions with their means
 ggplot(simsdf, aes(averages)) + 
-  geom_density(aes(fill=size),alpha=.5) +
+  geom_density(aes(fill=size, color=size),alpha=.4) +
   geom_vline(xintercept= c(samplemean, mean(asample), mean(anothersample))) +
-  ggtitle("Expected Values of Various Sizes of Distributions")
-
+  ggtitle("Expected Values of Various Sizes of Distributions")  +
+  xlab("Distribution of Averages")
 ```
 
 No matter the sample size, the sample mean clusters around the theoretical mean. 
 
-## Sample Variance versus Theoretical Variance: 
+## Sample Variance versus Theoretical Variance 
 
 Next, let's look at our sample variance.
 
-We know that our theoretical variance is 25 based on the following formula for an exponential distribution:
+We know that our theoretical variance is 25 because the mean and standard deviation for our exponential distribution is:
+
+$$\frac{1}{\lambda}$$
+
+That makes our variance:
 
 $$Var[X]=\frac{1}{\lambda^2}$$
 
-Because our data is noisy -- it doesn't come from a pure Poisson process -- we should estimate our sample variance using the following formula:
-
-$$s_{N-1} = \sqrt {\frac{1}{{N-1}}\sum\limits_{i=1}^N {\left( {x_i - \bar x} \right)^2}}$$
-
-Thankfully the var function in R does that for us.
-
 ```{r}
 
-samplevariance <- var(simsdf$averages[simsdf$size=="1000"])
+samplevariance <- samplemean^2
 samplevariance
 
 ```
 
 As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of distributions.
 
-```{r message=FALSE}
+```{r message=FALSE, echo=FALSE}
 
 library(dplyr)
 averagesdf <- simsdf %>% 
   group_by(size) %>% 
-  summarize(mean = mean(averages), var = var(averages))
+  summarize(mean = mean(averages)) %>% 
+  mutate(var = mean^2)
 
 averagesdf
 
@@ -150,14 +140,54 @@ There are three ways to tell if our distribution is normal.
 * The distribution is symmetric
 * 50% of values are less than the mean and 50% are greater
  
-That's three ways of saying the same thing, really. But they are easy to test, individually.
+Two of these are easy to test.
 
 ### mean = median = mode.
 
-In R, this is a simple logical comparison.
+In R, this is a simple logical comparison. Since we're trying to prove if it is "approximately" normal, let's use the signif function on our values to the first decimal point. See appendix for how I generate the mode.
+
+```{r, echo=FALSE}
+
+# subsetting the original simulation from my data frame
+originalsim <- simsdf$averages[simsdf$size=="1000"]
+
+# table of original simulation to find max
+table_data <- table(signif(originalsim,1))
+
+# mode of table_data
+samplemode <- subset(table_data, table_data==max(table_data))
+samplemode <- as.numeric(names(samplemode))
+
+```
+
 
 ```{r}
 
-samplemean == median(simsdf$averages[simsdf$size=="1000"])
+signif(samplemean,1) == signif(median(originalsim),1) 
+signif(samplemean,1) == samplemode
 
 ```
+
+
+### 50% of values are less than/above the mean
+
+To find out if our values are split 50/50 at the mean, let's use the qexp function to find the 50th quartile.
+
+```{r}
+
+qexp(0.50,1/samplemean)
+
+```
+
+Uh-oh. If we use the pexp function on our mean, we find our distribution is actually split with 37% of values occurring above the mean and 63% of values occuring below. That's hardly symmetric.
+
+```{r}
+
+# probability of a value occuring above the mean
+pexp(samplemean, 1/samplemean, lower.tail=FALSE)
+# probability of a value occuring below the mean
+pexp(samplemean, 1/samplemean)
+
+```
+
+We're looking for "approximately" normal, not normal, however. While the distribution does not fit the strict definition of normal, one could argue that because it meets 1/3 of the criteria, it could be considered approximate.
