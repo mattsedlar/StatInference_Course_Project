@@ -79,14 +79,14 @@ We know given the rate (0.2) that our expected value is 5 based on the following
 
 $$E[X]=\frac{1}{\lambda}=\beta$$
 
-We also know from the Central Limit Theorem that the sample mean approximates the population mean. To illustrate this, I'm going to pull samples from my simulation and plot those against the simulation distribution. 
+We also know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To illustrate this, I'm going to pull samples from my simulation and plot those against the simulation distribution. 
 
 
 ```r
-set.seed(14)
+set.seed(13)
 # simulate 500 and 250 averages from random exponentials
 asample <- replicate(500,mean(rexp(nexps,rate)))
-set.seed(15)
+set.seed(13)
 anothersample <- replicate(250,mean(rexp(nexps,rate)))
 
 # creating a new data frame and then binding those rows to the original
@@ -102,7 +102,7 @@ ggplot(simsdf, aes(averages)) +
 
 ![](ProjectReport_files/figure-html/unnamed-chunk-5-1.png) 
 
-No matter the sample size, the sample mean clusters around the theoretical mean. With an infinite number of simulations, we would reach 5.
+No matter the sample size, the sample mean clusters around the theoretical mean. 
 
 ## Sample Variance versus Theoretical Variance: 
 
@@ -112,17 +112,20 @@ We know that our theoretical variance is 25 based on the following formula for a
 
 $$Var[X]=\frac{1}{\lambda^2}$$
 
-We can find our sample variance by simply squaring the mean.
+Because our data is noisy -- it doesn't come from a pure Poisson process -- we should estimate our sample variance using the following formula:
 
+$$s_{N-1} = \sqrt {\frac{1}{{N-1}}\sum\limits_{i=1}^N {\left( {x_i - \bar x} \right)^2}}$$
+
+Thankfully the var function in R does that for us.
 
 
 ```r
-samplevariance <- samplemean^2
+samplevariance <- var(simsdf$averages[simsdf$size=="1000"])
 samplevariance
 ```
 
 ```
-## [1] 24.72587
+## [1] 0.6231669
 ```
 
 As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of distributions.
@@ -132,8 +135,7 @@ As with the mean, we see the same behavior with the variance. I will use dplyr's
 library(dplyr)
 averagesdf <- simsdf %>% 
   group_by(size) %>% 
-  summarize(mean = mean(averages)) %>% 
-  mutate(var = mean^2) 
+  summarize(mean = mean(averages), var = var(averages))
 
 averagesdf
 ```
@@ -141,11 +143,32 @@ averagesdf
 ```
 ## Source: local data frame [3 x 3]
 ## 
-##   size     mean      var
-## 1 1000 4.972512 24.72587
-## 2  250 5.086720 25.87472
-## 3  500 4.926989 24.27522
+##   size     mean       var
+## 1 1000 4.972512 0.6231669
+## 2  250 4.944257 0.5594809
+## 3  500 5.011172 0.6119713
 ```
 
 
-## Distribution: Via figures and text, explain how one can tell the distribution is approximately normal.
+## Distribution
+
+There are three ways to tell if our distribution is approximately normal. 
+
+* mean = median = mode
+* The distribution is symmetric
+* 50% of values are less than the mean and 50% are greater
+ 
+That's three ways of saying the same thing, really. But they are easy to test, individually.
+
+### mean = median = mode.
+
+In R, this is a simple logical comparison.
+
+
+```r
+samplemean == median(simsdf$averages[simsdf$size=="1000"])
+```
+
+```
+## [1] FALSE
+```
