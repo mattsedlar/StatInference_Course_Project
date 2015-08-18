@@ -2,9 +2,9 @@
 title: 'Statistical Inference Course Project: Exploring the Central Limit Theorem'
 author: "By Matthew Sedlar"
 output:
+  pdf_document: default
   html_document:
     keep_md: yes
-  pdf_document: default
 ---
 
 
@@ -14,37 +14,30 @@ This report explores the Central Limit Theorem using a set of randomly generated
 
 ## Simulations
 
+I'm going to run 1,000 simulations on 40 randomly generated exponentials with a rate of 0.2 using R's replicate function. Once I have the simulation results in the form of a matrix, I will run the mean function on the matrix using apply, then store the results in a data frame along with the number of simulations. (See Appendix A for the full code). 
+
 ```{r echo=FALSE}
 
 nosims <- 1000
 nexps <- 40
 rate <- 0.2
 
-```
-
-I'm going to run 1,000 simulations on 40 randomly generated exponentials with a rate of 0.2 using R's replicate function. I am using the replicate function because it takes up less lines than sapply or apply iterations and it's easier to understand if you're just taking a glance at my script. 
-
-Once I have the simulation results in the form of a matrix, I will store the averages of those results in a data frame along with the number of simulations. This will come in handy later. 
-
-```{r}
-
 # using set.seed so the results can be replicated
-# also, 13 is my lucky number
 set.seed(13)
 
 # 1000 simulations on 40 random exponentials
 sims <- replicate(nosims,rexp(nexps,rate))
 
-# storing the means of those simulations in a data frame
+# storing the clt of those simulations in a data frame
 # with the size of the simulations
 simsdf <- data.frame(averages = apply(sims,2, mean),
-                     size = "1000")
+                     size = factor("1000"))
 
 ```
 
 ## Sample Mean versus Theoretical Mean
 
-Let's examine the sample mean of our distribution (See Appendix A for a plot of the distribution).
+Let's examine the distribution for our simulation (See Appendix B for a plot of the distribution). Our sample mean is: 
 
 ```{r echo=FALSE}
 
@@ -53,71 +46,62 @@ samplemean
 
 ```
 
-We know given the rate (0.2) that our expected value is 5 based on the following formula.
+We know given our rate (0.2) that the theoretical mean is 5 based on the following formula:
 
-$$E[X]=\frac{1}{\lambda}=\beta$$
+$$E[X]=\frac{1}{\lambda}={\beta}$$
 
-We also know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To illustrate this, I'm going to run two more simulations -- 100 and 10 times, respectively -- and then plot those distributions against the original simulation distribution (see Appendix B for code). 
+We know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To further illustrate this, I'm going to run another 5,000 simulations and then compare the two distributions (see Appendix C for code). 
 
 
-```{r echo=FALSE, fig.height=4}
+```{r echo=FALSE, message=FALSE, fig.width=4.5, fig.height=3.5, fig.align='center'}
 
-# simulate 100 and 10 averages from random exponentials
+# simulate 5000 random exponentials
 set.seed(13)
-asample <- replicate(nosims/10,mean(rexp(nexps,rate)))
-set.seed(13)
-anothersample <- replicate(nosims/100,mean(rexp(nexps,rate)))
+sims2 <- replicate(nosims*5,rexp(nexps,rate))
 
 # creating a new data frame and then binding those rows to the original
-sampledf <- data.frame(averages=c(asample,anothersample), size=c("100","10"))
+sampledf <- data.frame(averages=c(
+  apply(sims2,2, mean)), 
+  size=factor("5000"))
 simsdf <- rbind(simsdf,sampledf)
+
+sample2mean <- mean(simsdf$averages[simsdf$size == "5000"])
+
+simsdf$mean[simsdf$size=="1000"] <- samplemean
+simsdf$mean[simsdf$size=="5000"] <- sample2mean
 
 library(ggplot2)
 # plotting all the distributions with their means
 ggplot(simsdf, aes(averages)) + 
-  geom_density(aes(fill=size, color=size),alpha=.4) +
-  geom_vline(xintercept= c(samplemean, mean(asample), mean(anothersample))) +
+  geom_histogram(aes(fill=size, color=size)) +
+  geom_vline(aes(xintercept= mean)) +
   ggtitle("Expected Values of Various Sample Sizes")  +
-  xlab("Averages")
+  xlab("Averages") +
+  facet_grid(.~size)
 ```
 
-No matter the sample size, the sample mean clusters around the theoretical mean. 
+No matter the sample size, the sample mean approximates the theoretical mean. 
 
 ## Sample Variance versus Theoretical Variance 
 
-Next, let's look at our sample variance.
+Next, let's look at our sample variance. Since our mean and our standard deviation are the same, we know our theoretical variance is `r 1/.2^2/40` based on the following formula:
 
-We know that our theoretical variance is 25 because the mean and standard deviation for our exponential distribution is:
+$$Var[X]=\frac{1}{\lambda^2}$$
 
-$$\frac{1}{\lambda}$$
+Using the same formula, we can determine our sample variance.
 
-That makes our variance:
+```{r echo=FALSE, message=FALSE}
 
-$$Var[X]=\frac{1}{\lambda^2}$$ 
+library(dplyr)
+# subsetting the original simulation from my data frame
+originalsim <- simsdf %>% filter(size=="1000")
 
-Using that formula, our sample variance is:
-
-```{r echo=FALSE}
-
-samplevariance <- samplemean^2
+samplevariance <- var(originalsim$averages)
 samplevariance
 
 ```
 
-As with the mean, we see the same behavior with the variance. I will use dplyr's group_by function on my simulations data frame to create a data frame that only displays the means and variances for each size of my simulations (See Appendix C for code).
-
-```{r message=FALSE, echo=FALSE}
-
-library(dplyr)
-averagesdf <- simsdf %>% 
-  group_by(size) %>% 
-  summarize(mean = mean(averages)) %>% 
-  mutate(var = mean^2)
-
-averagesdf
-
-```
-
+The sample variance shares a similar spread with the theoretical variance.
 
 ## Distribution
 
@@ -134,9 +118,6 @@ Two of these are easy to test.
 In R, this is a simple logical comparison. Since we're trying to prove if it is "approximately" normal, let's use the signif function on our values to the first decimal point. (See Appendix D for code on generating the mode.)
 
 ```{r, echo=FALSE}
-
-# subsetting the original simulation from my data frame
-originalsim <- simsdf %>% filter(size=="1000")
 
 # table of original simulation to find max
 table_data <- table(signif(originalsim$averages,1))
@@ -178,50 +159,61 @@ We're looking for "approximately" normal, not normal, however. While the distrib
 
 ## Appendix A
 
-```{r echo=FALSE, fig.height=4}
+### Simulation Script
+
+```{r eval=FALSE}
+
+nosims <- 1000
+nexps <- 40
+rate <- 0.2
+
+# using set.seed so the results can be replicated
+set.seed(13)
+
+# 1000 simulations on 40 random exponentials
+sims <- replicate(nosims,rexp(nexps,rate))
+
+# storing the clt of those simulations in a data frame
+# with the size of the simulations
+simsdf <- data.frame(averages = apply(sims,2, mean),
+                     size = factor("1000"))
+
+```
+
+## Appendix B
+
+```{r echo=FALSE, message=FALSE, fig.height=4}
 
 ggplot(originalsim, aes(averages)) + 
-  geom_density(aes(fill=size),alpha=.5) +
+  geom_histogram() +
   geom_vline(xintercept= samplemean) +
   ggtitle("Sample Mean of Simulation") +
   xlab("Averages")
 
 ```
 
-## Appendix B
+## Appendix C
 
 ### Running Additional Simulations and Adding Results to the Sims Data Frame
 
 ```{r eval=FALSE}
 
-# simulate 100 and 10 averages from random exponentials
+# simulate 5000 random exponentials
 set.seed(13)
-asample <- replicate(nosims/10,mean(rexp(nexps,rate)))
-set.seed(13)
-anothersample <- replicate(nosims/100,mean(rexp(nexps,rate)))
+sims2 <- replicate(nosims*5,rexp(nexps,rate))
 
 # creating a new data frame and then binding those rows to the original
-sampledf <- data.frame(averages=c(asample,anothersample), size=c("100","10"))
+sampledf <- data.frame(averages=c(
+  apply(sims2,2, mean)), 
+  size=factor("5000"))
 simsdf <- rbind(simsdf,sampledf)
 
-```
+sample2mean <- mean(simsdf$averages[simsdf$size == "5000"])
 
-## Appendix C
-
-### Data Frame Grouped by Simulation Size with Mean and Variances
-
-```{r eval=FALSE}
-
-library(dplyr)
-averagesdf <- simsdf %>% 
-  group_by(size) %>% 
-  summarize(mean = mean(averages)) %>% 
-  mutate(var = mean^2)
-
-averagesdf
+simsdf$mean[simsdf$size=="1000"] <- samplemean
+simsdf$mean[simsdf$size=="5000"] <- sample2mean
 
 ```
-
 
 ## Appendix D
 
