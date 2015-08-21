@@ -53,7 +53,7 @@ $$E[X]=\frac{1}{\lambda}={\beta}$$
 We know from the Central Limit Theorem that the sample mean from unbiased data approximates the population mean. To further illustrate this, I'm going to run another 5,000 simulations and then compare the two distributions (see Appendix C for code). 
 
 
-```{r echo=FALSE, message=FALSE, fig.width=4.5, fig.height=3.5, fig.align='center'}
+```{r echo=FALSE, message=FALSE, fig.height=3.75, fig.align='center'}
 
 # simulate 5000 random exponentials
 set.seed(13)
@@ -86,9 +86,9 @@ No matter the sample size, the sample mean approximates the theoretical mean.
 
 Next, let's look at our sample variance. Since our mean and our standard deviation are the same, we know our theoretical variance is `r 1/.2^2/40` based on the following formula:
 
-$$Var[X]=\frac{1}{\lambda^2}$$
+$$Var[X]=\frac{1}{\lambda^2}/n$$
 
-Using the same formula, we can determine our sample variance.
+We can use that formula or R's var() function to determine our sample variance.
 
 ```{r echo=FALSE, message=FALSE}
 
@@ -105,13 +105,12 @@ The sample variance shares a similar spread with the theoretical variance.
 
 ## Distribution
 
-There are three ways to tell if our distribution is normal. 
+There are a couple of ways to tell if our distribution is normal. Two of them are: 
 
 * mean = median = mode
 * The distribution is symmetric
-* 50% of values are less than the mean and 50% are greater
  
-Two of these are easy to test.
+These are easy to test.
 
 ### mean = median = mode.
 
@@ -128,7 +127,6 @@ samplemode <- as.numeric(names(samplemode))
 
 ```
 
-
 ```{r}
 
 signif(samplemean,1) == signif(median(originalsim$averages),1) 
@@ -139,19 +137,20 @@ signif(samplemean,1) == samplemode
 
 By the transitive property of equality, if mean = median and mean = mode, then median= mode. In this case, that is true. 
 
-### 50% of values are less than/above the mean
+### Symmetry
 
-To find out if our values are split 50/50 at the mean, let's use the qexp function to find the 50th quartile.
+The plot below shows the 1,000 simulations and the 5,000 simulations I conducted. While the density of the first distribution looks lumpy and a bit asymmetric, it's obvious from the increasing number of simulations that the distribution starts to look more like a bell curve.
 
-```{r}
-
-qexp(0.50,1/samplemean)
-
+```{r echo=FALSE, message=FALSE, fig.height=3.75, fig.align='center'}
+# plotting all the distributions with their density
+ggplot(simsdf, aes(averages)) + 
+  geom_density(aes(fill=size, color=size)) +
+  ggtitle("Density of Various Sample Sizes")  +
+  xlab("Averages") +
+  facet_grid(.~size)
 ```
 
-Uh-oh. If we use the pexp function on our mean, we find our distribution is actually split with `r pexp(samplemean, 1/samplemean, lower.tail=FALSE)*100`% of values occurring above the mean and `r pexp(samplemean, 1/samplemean)*100`% of values occuring below. That's hardly symmetric.
-
-We're looking for "approximately" normal, not normal, however. While the distribution does not fit the strict definition of normal, one could argue that because it meets 1/3 of the criteria, it could be considered approximate.
+If I were to do an infinite number of simulations, I expect the distribution would look normal.
 
 \pagebreak
 
@@ -182,7 +181,7 @@ simsdf <- data.frame(averages = apply(sims,2, mean),
 
 ## Appendix B
 
-```{r echo=FALSE, message=FALSE, fig.height=4}
+```{r echo=FALSE, message=FALSE, fig.height=3.75}
 
 ggplot(originalsim, aes(averages)) + 
   geom_histogram() +
